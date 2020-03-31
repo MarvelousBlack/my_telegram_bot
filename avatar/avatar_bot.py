@@ -25,8 +25,8 @@ channel_entity = client.get_entity(PeerChannel(channel_id=your_channel_id))
 last = datetime.now(timezone.utc) - timedelta(hours = 2)
 
 def conv_sticker(file):
-    im = Image.open(file).convert("RGB")
-    im.save("/tmp/sticker.jpg","jpeg")
+    im = Image.open(file).convert("RGBA")
+    im.save("/tmp/sticker.png","png")
     os.remove(file)
 
 def conv_gif(file):
@@ -61,13 +61,14 @@ async def handler(event):
                 file_name = '/tmp/sticker.webp'
                 await client.download_media(message=replymsg,file=file_name)
                 conv_sticker(file_name)
-                upload_file_result = await client.upload_file(file='/tmp/sticker.jpg')
-                os.remove('/tmp/sticker.jpg')
+                upload_file_result = await client.upload_file(file='/tmp/sticker.png')
+                os.remove('/tmp/sticker.png')
             elif replymsg.file.mime_type == "video/mp4":
                 file_name = '/tmp/video.mp4'
                 await client.download_media(message=replymsg,file=file_name)
                 conv_mp4(file_name)
                 upload_file_result = await client.upload_file(file='/tmp/video.png')
+                os.remove('/tmp/video.png')
             elif replymsg.file.mime_type == "image/gif":
                 file_name = '/tmp/noirgif.gif'
                 await client.download_media(message=replymsg,file=file_name)
