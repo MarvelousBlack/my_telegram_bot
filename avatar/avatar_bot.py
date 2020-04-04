@@ -55,6 +55,11 @@ def conv_white(file):
     wbg = Image.alpha_composite(wbg, im)
     wbg.save(file)
 
+def size2small(file):
+    im = Image.open(file).convert("RGBA")
+    x,y = im.size
+    return (x < 320 or y < 320)
+
 async def avatar(event,white=False):
     global last
     if (event.message.date - last) < timedelta(seconds = 100):
@@ -89,6 +94,11 @@ async def avatar(event,white=False):
 
         if white:
             conv_white('/tmp/avatar.png')
+        if size2small('/tmp/avatar.png'):
+            os.remove('/tmp/avatar.png')
+            m = await event.reply("你的頭太小了！需要 320×320 以上")
+            return None
+
         upload_file_result = await client.upload_file(file='/tmp/avatar.png')
         os.remove('/tmp/avatar.png')
         input_chat_uploaded_photo = InputChatUploadedPhoto(upload_file_result)
