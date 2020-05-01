@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 import logging
 import os
 import cv2
+import asyncio
 logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s',
                     level=logging.ERROR)
 api_id = 
@@ -23,6 +24,8 @@ client.start(bot_token=bot_token)
 
 channel_entity = client.get_entity(PeerChannel(channel_id=your_channel_id))
 last = datetime.now(timezone.utc) - timedelta(hours = 2)
+
+avatar_lock = asyncio.Lock()
 
 def conv_sticker(file):
     im = Image.open(file).convert("RGBA")
@@ -58,55 +61,56 @@ def conv_white(file):
 def size2small(file):
     im = Image.open(file).convert("RGBA")
     x,y = im.size
-    return (x < 320 or y < 320)
+    return (x < 160 or y < 160)
 
 async def avatar(event,white=False):
     global last
-    if (event.message.date - last) < timedelta(seconds = 100):
-        t = (timedelta(seconds = 100) - (event.message.date -last)).total_seconds()
-        m = await event.reply("賢者時間還剩"+str(t)+"s")
-        return None
-    replymsg = await event.message.get_reply_message()
-    try:
-        if replymsg.file is not None:
-            if replymsg.file.size > 5*1024**2:
-                m = await event.reply("不要啊啊啊啊，太大了！！！")
-                return None
-            if replymsg.file.name == "sticker.webp":
-                file_name = '/tmp/sticker.webp'
-                await client.download_media(message=replymsg,file=file_name)
-                conv_sticker(file_name)
-            elif replymsg.file.mime_type == "video/mp4":
-                file_name = '/tmp/video.mp4'
-                await client.download_media(message=replymsg,file=file_name)
-                conv_mp4(file_name)
-            elif replymsg.file.mime_type == "image/gif":
-                file_name = '/tmp/noirgif.gif'
-                await client.download_media(message=replymsg,file=file_name)
-                conv_gif(file_name)
-            elif "image" in replymsg.file.mime_type:
-                file_name = '/tmp/image'+ replymsg.file.ext
-                await client.download_media(message=replymsg,file=file_name)
-                img2png(file_name)
-            else:
-                m = await event.reply("不支持的類型")
-                return None
-
-        if white:
-            conv_white('/tmp/avatar.png')
-        if size2small('/tmp/avatar.png'):
-            os.remove('/tmp/avatar.png')
-            m = await event.reply("你的頭太小了！需要 320×320 以上")
+    async with avatar_lock:
+        if (event.message.date - last) < timedelta(seconds = 100):
+            t = (timedelta(seconds = 100) - (event.message.date -last)).total_seconds()
+            m = await event.reply("賢者時間還剩"+str(t)+"s")
             return None
-
-        upload_file_result = await client.upload_file(file='/tmp/avatar.png')
-        os.remove('/tmp/avatar.png')
-        input_chat_uploaded_photo = InputChatUploadedPhoto(upload_file_result)
-        result = await client(EditPhotoRequest(channel=event.message.to_id,
-        photo=input_chat_uploaded_photo))
-        last = event.message.date
-    except BaseException:
-        m = await event.reply("你的頭呢？")
+        replymsg = await event.message.get_reply_message()
+        try:
+            if replymsg.file is not None:
+                if replymsg.file.size > 5*1024**2:
+                    m = await event.reply("不要啊啊啊啊，太大了！！！")
+                    return None
+                if replymsg.file.name == "sticker.webp":
+                    file_name = '/tmp/sticker.webp'
+                    await client.download_media(message=replymsg,file=file_name)
+                    conv_sticker(file_name)
+                elif replymsg.file.mime_type == "video/mp4":
+                    file_name = '/tmp/video.mp4'
+                    await client.download_media(message=replymsg,file=file_name)
+                    conv_mp4(file_name)
+                elif replymsg.file.mime_type == "image/gif":
+                    file_name = '/tmp/noirgif.gif'
+                    await client.download_media(message=replymsg,file=file_name)
+                    conv_gif(file_name)
+                elif "image" in replymsg.file.mime_type:
+                    file_name = '/tmp/image'+ replymsg.file.ext
+                    await client.download_media(message=replymsg,file=file_name)
+                    img2png(file_name)
+                else:
+                    m = await event.reply("不支持的類型")
+                    return None
+    
+            if white:
+                conv_white('/tmp/avatar.png')
+            if size2small('/tmp/avatar.png'):
+                os.remove('/tmp/avatar.png')
+                m = await event.reply("你的頭太小了！需要 160×160 以上")
+                return None
+    
+            upload_file_result = await client.upload_file(file='/tmp/avatar.png')
+            os.remove('/tmp/avatar.png')
+            input_chat_uploaded_photo = InputChatUploadedPhoto(upload_file_result)
+            result = await client(EditPhotoRequest(channel=event.message.to_id,
+            photo=input_chat_uploaded_photo))
+            last = event.message.date
+        except BaseException:
+            m = await event.reply("你的頭呢？")
     return None
 
 
