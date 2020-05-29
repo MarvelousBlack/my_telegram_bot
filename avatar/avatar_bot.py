@@ -9,11 +9,11 @@ import os
 import cv2
 import asyncio
 logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s',
-                    level=logging.ERROR)
+                    level=logging.INFO)
 api_id = 
 api_hash = ''
 bot_token = ''
-your_channel_id =
+chat_list = []
 
 client = TelegramClient('avatar_bot',
                     api_id,
@@ -21,11 +21,32 @@ client = TelegramClient('avatar_bot',
                     )
 client.start(bot_token=bot_token)
 
-
-channel_entity = client.get_entity(PeerChannel(channel_id=your_channel_id))
-last = datetime.now(timezone.utc) - timedelta(hours = 2)
+last_all = []
 
 avatar_lock = asyncio.Lock()
+
+async def is_timeup(event):
+    global last_all
+    for chat in last_all:
+        if chat['chat_id'] == event.chat_id:
+            last = chat['last']
+            if (event.message.date - last) < timedelta(seconds = 100):
+                t = (timedelta(seconds = 100) - (event.message.date -last)).total_seconds()
+                m = await event.reply("賢者時間還剩"+str(t)+"s")
+                return False
+            else:
+                return True
+    last = datetime.now(timezone.utc) - timedelta(hours = 2)
+    dictadd = {'chat_id': event.chat_id, 'last': last}
+    last_all.append(dictadd)
+    return True
+
+def update_last(event):
+    global last_all
+    for chat in last_all:
+        if chat['chat_id'] == event.chat_id:
+           chat['last'] = event.message.date
+    return None
 
 def conv_sticker(file):
     im = Image.open(file).convert("RGBA")
@@ -64,15 +85,20 @@ def size2small(file):
     return (x < 160 or y < 160)
 
 async def avatar(event,white=False):
-    global last
+    sender = await event.get_sender()
+    logging.info("avatar,sender_id = %s,username= %s,sender first_name = %s,last_name=%s, message = %s,chat_id= %s",event.message.from_id,sender.username,sender.first_name,sender.last_name,event.message.message ,event.chat_id)
+
+    global chat_list
+    if event.chat_id not in chat_list:
+        m = await event.reply("如果需要使用請先聯系 @MarvelousBlack 將該羣加入白名單。chat_id={}".format(event.chat_id))
+        return None
+    if not await is_timeup(event):
+        return None
+
     async with avatar_lock:
-        if (event.message.date - last) < timedelta(seconds = 100):
-            t = (timedelta(seconds = 100) - (event.message.date -last)).total_seconds()
-            m = await event.reply("賢者時間還剩"+str(t)+"s")
-            return None
         replymsg = await event.message.get_reply_message()
         try:
-            if replymsg.file is not None:
+            if  replymsg.file is not None:
                 if replymsg.file.size > 5*1024**2:
                     m = await event.reply("不要啊啊啊啊，太大了！！！")
                     return None
@@ -108,19 +134,28 @@ async def avatar(event,white=False):
             input_chat_uploaded_photo = InputChatUploadedPhoto(upload_file_result)
             result = await client(EditPhotoRequest(channel=event.message.to_id,
             photo=input_chat_uploaded_photo))
-            last = event.message.date
+            update_last(event)
+            logging.info("avatar, success,chat_id = %s",event.chat_id)
         except BaseException:
             m = await event.reply("你的頭呢？")
     return None
 
 
-@client.on(events.NewMessage(chats=channel_entity,pattern=r'/avatar_black'))
+@client.on(events.NewMessage(func=lambda e: not e.is_private,pattern=r'/avatar_black'))
 async def handler(event):
      await avatar(event)
 
-@client.on(events.NewMessage(chats=channel_entity,pattern=r'/avatar_white'))
+@client.on(events.NewMessage(func=lambda e: not e.is_private,pattern=r'/avatar_white'))
 async def handler(event):
     await avatar(event,white=True)
+
+@client.on(events.NewMessage(pattern=r'/start'))
+async def handler(event):
+    m = await event.reply("如果需要使用請先聯系 @MarvelousBlack，如果已經在使用請忽略本消息。關於信息在 info 裏。")
+
+@client.on(events.NewMessage(pattern=r'/info'))
+async def handler(event):
+    m = await event.reply(u"本機器人提供羣組換頭功能，支持視頻，GIF,表情和正常的圖片(不支持動態表情)。\n Source code: https://github.com/MarvelousBlack/my_telegram_bot/tree/master/avatar")
 
 if __name__ == "__main__":
     try:
