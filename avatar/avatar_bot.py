@@ -92,10 +92,10 @@ async def avatar(event,white=False):
     if event.chat_id not in chat_list:
         m = await event.reply("如果需要使用請先聯系 @MarvelousBlack 將該羣加入白名單。chat_id={}".format(event.chat_id))
         return None
-    if not await is_timeup(event):
-        return None
 
     async with avatar_lock:
+        if not await is_timeup(event):
+            return None
         replymsg = await event.message.get_reply_message()
         try:
             if  replymsg.file is not None:
@@ -155,7 +155,7 @@ async def handler(event):
 
 @client.on(events.NewMessage(pattern=r'/info'))
 async def handler(event):
-    m = await event.reply(u"本機器人提供羣組換頭功能，支持視頻，GIF,表情和正常的圖片(不支持動態表情)。\n Source code: https://github.com/MarvelousBlack/my_telegram_bot/tree/master/avatar")
+    m = await event.reply(u"本機器人提供羣組換頭功能，支持視頻，GIF,表情和正常的圖片(不支持動態表情)。\n 用法爲引用需要更換的消息（消息中包含圖片視頻等）然後使用 avatar 命令\n 黑白之間的區別是對透明圖片背景色的處理。 \n Source code: https://github.com/MarvelousBlack/my_telegram_bot/tree/master/avatar")
 
 if __name__ == "__main__":
     try:
