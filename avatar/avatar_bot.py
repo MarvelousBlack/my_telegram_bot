@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+
+# Copyright (C) 2020 megumifox <i@megumifox.com>
+
 from telethon import TelegramClient, events, sync
 from telethon.tl.types import PeerUser, PeerChat, PeerChannel
 from telethon.tl.functions.channels import EditPhotoRequest
