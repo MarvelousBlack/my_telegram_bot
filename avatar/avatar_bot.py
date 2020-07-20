@@ -14,6 +14,7 @@ import cv2
 import asyncio
 logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s',
                     level=logging.INFO)
+logger=logging.getLogger("AVATAR")
 api_id = 
 api_hash = ''
 bot_token = ''
@@ -90,7 +91,7 @@ def size2small(file):
 
 async def avatar(event,white=False):
     sender = await event.get_sender()
-    logging.info("avatar,sender_id = %s,username= %s,sender first_name = %s,last_name=%s, message = %s,chat_id= %s",event.message.from_id,sender.username,sender.first_name,sender.last_name,event.message.message ,event.chat_id)
+    logger.info("sender_id = %s,username= %s,sender first_name = %s,last_name=%s, message = %s,chat_id= %s",event.message.from_id,sender.username,sender.first_name,sender.last_name,event.message.message ,event.chat_id)
 
     global chat_list
     if event.chat_id not in chat_list:
@@ -139,7 +140,7 @@ async def avatar(event,white=False):
             result = await client(EditPhotoRequest(channel=event.message.to_id,
             photo=input_chat_uploaded_photo))
             update_last(event)
-            logging.info("avatar, success,chat_id = %s",event.chat_id)
+            logger.info("success,chat_id = %s",event.chat_id)
         except BaseException:
             m = await event.reply("你的頭呢？")
     return None
