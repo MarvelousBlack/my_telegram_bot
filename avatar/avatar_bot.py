@@ -19,6 +19,7 @@ api_id =
 api_hash = ''
 bot_token = ''
 chat_list = []
+bot_name=''
 
 client = TelegramClient('avatar_bot',
                     api_id,
@@ -156,15 +157,18 @@ async def handler(event):
 
 @client.on(events.NewMessage(pattern=r'/start'))
 async def handler(event):
+    if '@' in event.message.message and not event.message.mentioned and bot_name not in event.message.message:
+        return 0
     m = await event.reply("如果需要使用請先聯系 @MarvelousBlack，如果已經在使用請忽略本消息。關於信息在 info 裏。")
 
 @client.on(events.NewMessage(pattern=r'/info'))
 async def handler(event):
+    if '@' in event.message.message and not event.message.mentioned and bot_name not in event.message.message:
+        return 0
     m = await event.reply(u"本機器人提供羣組換頭功能，支持視頻，GIF,表情和正常的圖片(不支持動態表情)。\n 用法爲引用需要更換的消息（消息中包含圖片視頻等）然後使用 avatar 命令\n 黑白之間的區別是對透明圖片背景色的處理。 \n Source code: https://github.com/MarvelousBlack/my_telegram_bot/tree/master/avatar")
 
 if __name__ == "__main__":
     try:
-        print('(Press Ctrl+C to stop this)')
         client.run_until_disconnected()
     finally:
         client.disconnect()
