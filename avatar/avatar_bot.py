@@ -103,6 +103,7 @@ async def avatar(event,white=False):
         if not await is_timeup(event):
             return None
         replymsg = await event.message.get_reply_message()
+        waitmsg = await event.reply("處理中...")
         try:
             if  replymsg.file is not None:
                 if replymsg.file.size > 5*1024**2:
@@ -144,6 +145,11 @@ async def avatar(event,white=False):
             logger.info("success,chat_id = %s",event.chat_id)
         except BaseException:
             m = await event.reply("你的頭呢？")
+        except Exception as e:
+            logger.error(e)
+            m = await event.reply("出錯了！")
+        finally:
+            await waitmsg.delete()
     return None
 
 
